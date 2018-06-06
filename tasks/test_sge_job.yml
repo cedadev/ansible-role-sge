@@ -1,0 +1,24 @@
+---
+# Test an SGE job can be submitted and run on single host
+
+- name: Start SGE execd service
+  service: name=sge_execd state=started enabled=yes
+
+- name: Write simple job
+  template: 
+    src:     test_run.sh.j2 
+    dest:    /tmp/test_run.sh
+    mode:    0755
+
+- name: Run the job
+  shell: |
+    . /usr/share/gridengine/default/common/settings.sh
+    qsub -wd /tmp /tmp/test_run.sh
+  
+- name: Wait 20 seconds for output to be written
+  wait_for: 
+    timeout: 20
+    path:    /tmp/host.txt
+    state:   present
+    msg:     Timeout to find file /tmp/host.txt
+

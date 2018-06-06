@@ -1,0 +1,52 @@
+---
+# This role installs SGE and ensures that the service is started
+
+- name: Install SGE master and execute daemon (and required java lib)
+  yum: name={{ item }} state=latest
+  with_items:
+    - libgcj
+    - gridengine
+    - gridengine-qmaster
+    - gridengine-execd
+
+# Copy install template files across
+- name: Copy template config file to server
+  template:
+    src:  "{{ item.src }}"
+    dest: "{{ item.dest }}"
+  with_items:
+    - { src: "inst_wps.conf.j2", dest: "/usr/share/gridengine/inst_wps.conf" }
+    - { src: "gridengine.j2", dest: "/etc/sysconfig/gridengine" } 
+
+# SGE configuration Specific tasks
+- name: qmaster installation (CentOS)
+  command: ./install_qmaster -auto ./inst_wps.conf
+  register: result
+  failed_when: result.rc > 1
+  args:
+    chdir: /usr/share/gridengine
+    creates: /usr/share/gridengine/default/common/cluster_name
+
+- name: Update act_qmaster file
+  template: 
+    src:  "act_qmaster.j2"
+    dest: "/usr/share/gridengine/default/common/act_qmaster"
+
+- name: Create settings scripts
+  shell: |
+    . /etc/profile.d/sge.sh
+    cd /usr/share/gridengine
+    util/create_settings.sh default/common/
+
+- name: Start SGE master service
+  service: name=sgemaster state=started enabled=yes
+  when: inventory_hostname == sge_master_hostip
+
+- name: Add sgeadmin manager user - THIS IS ESSENTIAL 
+  shell: |
+    . /etc/profile.d/sge.sh
+    qconf -am sgeadmin
+  when: inventory_hostname == sge_master_hostip 
+
+- name: Start SGE execd service
+  service: name=sge_execd state=started enabled=yes

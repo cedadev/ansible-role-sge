@@ -1,0 +1,10 @@
+---
+# This role installs SGE and ensures that the service is started
+
+- include: setup_sge.yml
+
+- include: setup_hosts_queues.yml
+  when:    inventory_hostname == sge_master_hostip
+
+- include: test_sge_job.yml
+  when:    inventory_hostname == sge_master_hostip

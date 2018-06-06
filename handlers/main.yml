@@ -1,0 +1,7 @@
+---
+
+- name: Restart SGE master
+  service: name=sgemaster state=restarted
+
+- name: Restart SGE execd
+  service: name=sge_execd state=restarted

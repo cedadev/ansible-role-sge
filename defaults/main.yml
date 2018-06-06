@@ -1,0 +1,25 @@
+sge_cluster_name: "sge_cluster"
+
+sge_master_port:  6444
+sge_execd_port: 6445
+
+# Master info
+sge_master_hostname: ""
+sge_master_hostip:   ""
+
+# The execute hosts need to be space-delimited
+all_execute_hosts: ""
+
+# Queues
+sge_queues:
+  - label: "fast"
+    name:  "wps_fast.q"
+
+  - label: "slow"
+    name:  "wps_slow.q"
+
+# Submit hosts - add one per line giving "name"
+sge_submit_hosts:
+  - name: ""
+  - name: ""
+

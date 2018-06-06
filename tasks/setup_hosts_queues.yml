@@ -1,0 +1,62 @@
+---
+# Setup SGE hosts and queues
+
+# Copy some templated files across to configure sge
+- name: Copy host group file across
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+  with_items:
+    - { src: "allhosts_group.j2", dest: "/tmp/allhosts.conf" } 
+    - { src: "sched_conf.j2", dest: "/tmp/sched_conf" }
+
+- name: Set host group for allhosts 
+  action: shell . /usr/share/gridengine/default/common/settings.sh ; qconf -Ahgrp /tmp/allhosts.conf
+
+- name: Set scheduler configuration - including reduced wait interval (schedule_interval)
+  action: shell . /usr/share/gridengine/default/common/settings.sh ; qconf -Msconf /tmp/sched_conf 
+
+- name: Copy queue configurations across
+  template:
+    src: "{{ queue.name }}.j2"
+    dest: "/tmp/{{ queue.name }}"
+  with_items: "{{ sge_queues }}"
+  loop_control:
+    loop_var: queue
+    label: "{{ queue.label }}"
+
+# Add queues
+- name: Add queues
+  action: shell . /usr/share/gridengine/default/common/settings.sh ; qconf -Aq "/tmp/{{ queue.name }}"
+  with_items: "{{ sge_queues }}"
+  loop_control:
+    loop_var: queue
+    label: "{{ queue.label }}"
+
+# Add execute hosts
+- name: Copy execute host configs across
+  template:
+    src: "exec_host.conf.j2"
+    dest: "/tmp/{{ host.name }}_exec_host.conf"
+  with_items: "{{ sge_execute_hosts }}"
+  loop_control:
+    loop_var: host
+    label: "{{ host.name }}"
+
+- name: Add execute hosts
+  action: shell . /usr/share/gridengine/default/common/settings.sh ; qconf -Ae "/tmp/{{ host.name }}_exec_host.conf"
+  with_items: "{{ sge_execute_hosts }}"
+#  when: (host.name != all_execute_hosts)
+  loop_control:
+    loop_var: host
+    label: "{{ host.name }}"
+
+# Add submit hosts
+- name: Add submit hosts
+  action: shell . /usr/share/gridengine/default/common/settings.sh ; qconf -as {{ host.name }} 
+  with_items: "{{ sge_submit_hosts }}"
+  loop_control:
+    loop_var: host
+    label: "{{ host.name }}"
+
+
